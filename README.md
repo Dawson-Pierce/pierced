@@ -1,7 +1,9 @@
 # Probabilistic Inference and Estimation using RFS for Coordinated Evasive Drones
 ----------------------------------------
 
-An application of [BREW](https://github.com/Dawson-Pierce/brew) that implements advanced target tracking algorithms on drones. 
+Applications of RFS-based algorithms for tracking aerial vehicles. 
+
+MATLAB simulations utilize the [BREW](https://github.com/Dawson-Pierce/brew) package that performs advanced target tracking for various distributions. 
 
 NOTE: This code is still in development and is in no way promised to perform to any specific standard. 
 
