@@ -3,7 +3,7 @@
 
 Applications of RFS-based algorithms for tracking aerial vehicles. 
 
-MATLAB simulations utilize the [BREW](https://github.com/Dawson-Pierce/brew) package that performs advanced target tracking for various distributions. Everything will be moved to C++ eventually. 
+MATLAB simulations utilize the [BREW](https://github.com/Dawson-Pierce/brew) package that performs advanced target tracking for various distributions. Everything will be moved to C++ for hardware implementations. 
 
 NOTE: This code is still in development and is in no way promised to perform to any specific standard. 
 
