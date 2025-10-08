@@ -1,4 +1,4 @@
-# Bayesian Recursive Estimation Workspace
+# Probabilistic Inference and Estimation using RFS for Coordinated Evasive Drones
 ----------------------------------------
 
 An application of [BREW](https://github.com/Dawson-Pierce/brew) that implements advanced target tracking algorithms on drones. 
