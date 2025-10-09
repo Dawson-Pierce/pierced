@@ -34,7 +34,7 @@ inner_filter = BREW.filters.TrajectoryGGIWEKF('dyn_obj',target_motion, ...
 
 alpha = {10};
 beta = {1}; 
-mean = {[17.5; 17.5; 10; 0; 0; 0]}; 
+mean = {[17.5; 17.5; 0; 0; 0; 0]}; 
 covariance = {diag([15,15,10,2,2,2])}; 
 IWdof = {10}; 
 IWshape = {[1 0 0; 0 1 0; 0 0 1]}; 
@@ -72,11 +72,11 @@ for k = 1:length(sensors)
     'extract_threshold',0.5);
 end
 
-points = cell(length(sensors),1); 
+points = cell(length(sensors),length(t)); 
 
 %% Simulation
 
-x_true = {[25; 25; 10; -1; 0; 0],[10; 10; 10; 1; 0; 0]};
+x_true = {[25; 25; 0; -1; 0; 0],[10; 10; 0; 1; 0; 0]};
 
 T = cell(length(x_true),1);
 
@@ -84,83 +84,104 @@ for k = 1:length(x_true)
     T{k} = [eye(3), x_true{k}(1:3); zeros(1,3), 1];
 end
 
-f = figure; 
-subplot(1,2,1)
-ax = axes;
-axis equal; 
-view(3); hold on
-
-subplot(1,2,2)
-ax2 = axes;
-axis equal; 
-view(3); hold on
-
 est_mix = cell(length(sensors),1);
 est_colors = {'m','c'};
 
 gifFilename = 'PointCloudDroneTrackingPOC.gif';
 
-for k = 1:length(t) 
-    for kk = 1:length(T)
-        x_true{kk} = target_motion.propagateState(dt,x_true{kk});
-        T{kk}(1:3,4) = x_true{kk}(1:3);
+plot = 1;
+
+if plot == 0 
+   for k = 1:length(t) 
+        for kk = 1:length(T)
+            x_true{kk} = target_motion.propagateState(dt,x_true{kk});
+            T{kk}(1:3,4) = x_true{kk}(1:3);
+        end
+        
+        for kk = 1:length(sensors)
+            points{kk,k} = sensors{kk}.get_points(TR,T);
+            
+            sensors{kk}.internal_tracker.predict(dt,{});
+            sensors{kk}.internal_tracker.correct(dt,points{kk,k}');
+            
+            est_mix{kk} = sensors{kk}.internal_tracker.cleanup();
+         end 
     end
+elseif plot == 1
+    f = figure; 
     subplot(1,2,1)
-    cla 
-    for kk = 1:length(sensors)
-        points{kk} = sensors{kk}.get_points(TR,T);
-        scatter3(points{kk}(:,1),points{kk}(:,2),points{kk}(:,3),6,'*'); hold on
-        sensors{kk}.plot()
-        
-        sensors{kk}.internal_tracker.predict(dt,{});
-        sensors{kk}.internal_tracker.correct(dt,points{kk}');
-        
-        est_mix{kk} = sensors{kk}.internal_tracker.cleanup();
-        
-        est_mix{kk}.plot_distributions([1,2,3],'Color',est_colors{kk},'window_color','r','window_width',1.6);
-    end
-
-    xlim([0 30])
-    ylim([0 30])
-    zlim([-6 12])
-
+    ax = axes;
+    axis equal; 
+    view(3); hold on
+    
     subplot(1,2,2)
-    cla 
-    for kk = 1:length(sensors)
-        points{kk} = sensors{kk}.get_points(TR,T);
-        scatter3(points{kk}(:,1),points{kk}(:,2),points{kk}(:,3),6,'*'); hold on
-        sensors{kk}.plot()
-    end
+    ax2 = axes;
+    axis equal; 
+    view(2); hold on
 
-    xlim([0 30])
-    ylim([0 30])
-    zlim([-6 12])
+    for k = 1:length(t) 
+        for kk = 1:length(T)
+            x_true{kk} = target_motion.propagateState(dt,x_true{kk});
+            T{kk}(1:3,4) = x_true{kk}(1:3);
+        end
+        subplot(1,2,1)
+        cla 
+        for kk = 1:length(sensors)
+            points{kk,k} = sensors{kk}.get_points(TR,T);
+            scatter3(points{kk,k}(:,1),points{kk,k}(:,2),points{kk,k}(:,3),6,'*'); hold on
+            sensors{kk}.plot()
+            
+            sensors{kk}.internal_tracker.predict(dt,{});
+            sensors{kk}.internal_tracker.correct(dt,points{kk,k}');
+            
+            est_mix{kk} = sensors{kk}.internal_tracker.cleanup();
+            
+            est_mix{kk}.plot_distributions([1,2,3],'Color',est_colors{kk},'window_color','r','window_width',1.6);
+        end
     
-    drawnow;
+        xlim([0 30])
+        ylim([0 30])
+        zlim([-6 12])
     
-    frame = getframe(f);
-    img   = frame2im(frame);
+        subplot(1,2,2)
+        cla 
+        for kk = 1:length(sensors)
+            points{kk,k} = sensors{kk}.get_points(TR,T);
+            scatter3(points{kk,k}(:,1),points{kk,k}(:,2),points{kk,k}(:,3),6,'*'); hold on
+            sensors{kk}.plot()
+        end
     
-    % convert to an indexed image with a fixed 256‐color map
-    [A, map] = rgb2ind(img, 256);
+        xlim([0 30])
+        ylim([0 30])
+        zlim([-6 12])
+        
+        drawnow;
+        
+        frame = getframe(f);
+        img   = frame2im(frame);
+        
+        % convert to an indexed image with a fixed 256‐color map
+        [A, map] = rgb2ind(img, 256);
+        
+        % write to GIF: first frame creates the file, subsequent frames append
+        if k == 1
+            imwrite(A, map, gifFilename, 'gif', ...
+                    'LoopCount', Inf, ...      % make it loop forever
+                    'DelayTime', 0.1);         % seconds between frames
+        else
+            imwrite(A, map, gifFilename, 'gif', ...
+                    'WriteMode', 'append', ...
+                    'DelayTime', 0.1);
+        end
     
-    % write to GIF: first frame creates the file, subsequent frames append
-    if k == 1
-        imwrite(A, map, gifFilename, 'gif', ...
-                'LoopCount', Inf, ...      % make it loop forever
-                'DelayTime', 0.1);         % seconds between frames
-    else
-        imwrite(A, map, gifFilename, 'gif', ...
-                'WriteMode', 'append', ...
-                'DelayTime', 0.1);
     end
-
 end
 
 %%
 
 figure;
 for kk = 1:length(sensors) 
-    scatter3(points{kk}(:,1),points{kk}(:,2),points{kk}(:,3),6,'*'); hold on
+    scatter3(points{kk,1}(:,1),points{kk,1}(:,2),points{kk,1}(:,3),6,'*'); hold on
+    scatter3(points{kk,50}(:,1),points{kk,50}(:,2),points{kk,50}(:,3),6,'*'); hold on
     sensors{kk}.plot()
 end

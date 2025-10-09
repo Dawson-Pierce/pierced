@@ -81,6 +81,7 @@ classdef sensor_station < handle
         function pnts = get_points(obj,TR,T)
 
             if isa(TR,'cell') & isa(T,'cell')
+                loc = cell(length(T),1);
                 for k = 1:length(TR)
                     old_points = TR{k}.Points';
         
@@ -90,11 +91,11 @@ classdef sensor_station < handle
                     
                     ptCloud = mesh2pc(TR_transformed,"SamplingMethod","PoissonDiskSampling");
                 
-                    loc = T{k}(1:3,4) - obj.location';
+                    loc{k} = T{k}(1:3,4) - obj.location';
 
-                    [ptCloud, ~] = removeHiddenPoints(ptCloud,loc');
+                    [ptCloud, ~] = removeHiddenPoints(ptCloud,obj.location);
                 
-                    gridStep = obj.grid_slope * norm(loc) + obj.grid_base;
+                    gridStep = obj.grid_slope * norm(loc{k}) + obj.grid_base;
                 
                     ptCloudPreMerge = pcdownsample(ptCloud,"gridAverage",gridStep);
 
@@ -105,7 +106,8 @@ classdef sensor_station < handle
                     end
                 end
 
-                [ptCloudOut, ~] = removeHiddenPoints(ptCloudOut,obj.view_vector);
+                [ptCloudOut, ~] = removeHiddenPoints(ptCloudOut,obj.location);
+                
             else
                 old_points = TR.Points';
             
@@ -117,7 +119,7 @@ classdef sensor_station < handle
             
                 loc = T(1:3,4) - obj.location';
 
-                [ptCloud, ~] = removeHiddenPoints(ptCloud,loc');
+                [ptCloud, ~] = removeHiddenPoints(ptCloud,obj.location);
             
                 gridStep = obj.grid_slope * norm(loc) + obj.grid_base;
             
