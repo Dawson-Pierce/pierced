@@ -10,6 +10,8 @@ addpath('../../brew/')
 
 TR = stlread("drone_shape.stl");
 
+TR = {TR, TR};
+
 %% Setup motion model / ETT PHD
 
 target_motion = BREW.dynamics.Integrator_3D();
@@ -32,8 +34,8 @@ inner_filter = BREW.filters.TrajectoryGGIWEKF('dyn_obj',target_motion, ...
 
 alpha = {10};
 beta = {1}; 
-mean = {[15; 15; 10; 0; 0; 0]}; 
-covariance = {diag([10,10,10,2,2,2])}; 
+mean = {[17.5; 17.5; 10; 0; 0; 0]}; 
+covariance = {diag([15,15,10,2,2,2])}; 
 IWdof = {10}; 
 IWshape = {[1 0 0; 0 1 0; 0 0 1]}; 
 weight = [1];
@@ -70,13 +72,17 @@ for k = 1:length(sensors)
     'extract_threshold',0.5);
 end
 
-T = [eye(3), [20; 20; 10]; zeros(1,3) 1];
-
 points = cell(length(sensors),1); 
 
 %% Simulation
 
-x_true = [20; 20; 10; -1; -1; -0.1];
+x_true = {[25; 25; 10; -1; 0; 0],[10; 10; 10; 1; 0; 0]};
+
+T = cell(length(x_true),1);
+
+for k = 1:length(x_true)
+    T{k} = [eye(3), x_true{k}(1:3); zeros(1,3), 1];
+end
 
 f = figure; 
 subplot(1,2,1)
@@ -95,8 +101,10 @@ est_colors = {'m','c'};
 gifFilename = 'PointCloudDroneTrackingPOC.gif';
 
 for k = 1:length(t) 
-    x_true = target_motion.propagateState(dt,x_true);
-    T(1:3,4) = x_true(1:3);
+    for kk = 1:length(T)
+        x_true{kk} = target_motion.propagateState(dt,x_true{kk});
+        T{kk}(1:3,4) = x_true{kk}(1:3);
+    end
     subplot(1,2,1)
     cla 
     for kk = 1:length(sensors)

@@ -79,23 +79,52 @@ classdef sensor_station < handle
 
 
         function pnts = get_points(obj,TR,T)
-    
-            old_points = TR.Points';
-        
-            new_points = (T * [old_points; ones(1, size(old_points, 2))])';
-            
-            TR_transformed = triangulation(TR.ConnectivityList,new_points(:,1:3));
-            
-            ptCloud = mesh2pc(TR_transformed,"SamplingMethod","PoissonDiskSampling");
-        
-            [ptCloud, ~] = removeHiddenPoints(ptCloud,obj.view_vector);
-        
-            loc = T(1:3,4) - obj.location;
-        
-            gridStep = obj.grid_slope * norm(loc) + obj.grid_base;
-        
-            ptCloudOut = pcdownsample(ptCloud,"gridAverage",gridStep);
 
+            if isa(TR,'cell') & isa(T,'cell')
+                for k = 1:length(TR)
+                    old_points = TR{k}.Points';
+        
+                    new_points = (T{k} * [old_points; ones(1, size(old_points, 2))])';
+                    
+                    TR_transformed = triangulation(TR{k}.ConnectivityList,new_points(:,1:3));
+                    
+                    ptCloud = mesh2pc(TR_transformed,"SamplingMethod","PoissonDiskSampling");
+                
+                    loc = T{k}(1:3,4) - obj.location';
+
+                    [ptCloud, ~] = removeHiddenPoints(ptCloud,loc');
+                
+                    gridStep = obj.grid_slope * norm(loc) + obj.grid_base;
+                
+                    ptCloudPreMerge = pcdownsample(ptCloud,"gridAverage",gridStep);
+
+                    if k == 1
+                        ptCloudOut = ptCloudPreMerge;
+                    else
+                        ptCloudOut = pcmerge(ptCloudOut, ptCloudPreMerge, 0.01);
+                    end
+                end
+
+                [ptCloudOut, ~] = removeHiddenPoints(ptCloudOut,obj.view_vector);
+            else
+                old_points = TR.Points';
+            
+                new_points = (T * [old_points; ones(1, size(old_points, 2))])';
+                
+                TR_transformed = triangulation(TR.ConnectivityList,new_points(:,1:3));
+                
+                ptCloud = mesh2pc(TR_transformed,"SamplingMethod","PoissonDiskSampling");
+            
+                loc = T(1:3,4) - obj.location';
+
+                [ptCloud, ~] = removeHiddenPoints(ptCloud,loc');
+            
+                gridStep = obj.grid_slope * norm(loc) + obj.grid_base;
+            
+                ptCloudOut = pcdownsample(ptCloud,"gridAverage",gridStep); 
+
+            end
+            
             pts = ptCloudOut.Location; 
             vecs = pts - obj.location;
             vecs_norm = vecs ./ vecnorm(vecs,2,2);
