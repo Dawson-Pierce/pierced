@@ -1,4 +1,4 @@
-# Probabilistic Inference and Estimation using RFS for Coordinated Evasive Drones
+# Probabilistic Information Extraction from Radar, CMOS, and Electro-optical Data (PIERCED)
 ----------------------------------------
 
 Applications of RFS-based algorithms for tracking aerial vehicles. 
